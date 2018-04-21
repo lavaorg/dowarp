@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/lavaorg/warp/servers/ufs"
+	"github.com/lavaorg/dowarp/ufs"
 	"github.com/lavaorg/warp/warp9"
 )
 

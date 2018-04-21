@@ -60,7 +60,7 @@ func listenForServers(ntype, addr string) {
 func handleConnection(c net.Conn) {
 
 	warp9.DefaultDebuglevel = *dbglev
-	uid := uint32(0xFFFFFFFF & os.Getuid())
+	uid := uint32(0xFFFFFFFF & uint32(os.Getuid()))
 	user := warp9.Identity.User(uid)
 
 	c9, err := warp9.MountConn(c, *aname, 500, user)
@@ -82,7 +82,7 @@ func handleConnection(c net.Conn) {
 }
 
 func readSensor0(c9 *warp9.Clnt) {
-	f, err := c9.FOpen("sensors", warp9.OREAD)
+	f, err := c9.Open("sensors", warp9.OREAD)
 	if err != warp9.Egood {
 		log.Fatalf("Error:%v\n", err)
 	}
@@ -115,13 +115,13 @@ func readSensor0(c9 *warp9.Clnt) {
 // the sensors being read is a small number of bytes.
 func readSensor(c9 *warp9.Clnt) {
 
-	fid, err := c9.FWalk("sensors")
+	fid, err := c9.Walk("sensors")
 	if err != warp9.Egood {
 		mlog.Error("could not Walk:%v", err)
 		return
 	}
 	defer c9.Clunk(fid)
-	err = c9.Open(fid, warp9.OREAD)
+	err = c9.FOpen(fid, warp9.OREAD)
 	if err != warp9.Egood {
 		mlog.Error("open failed:%v", err)
 		return
@@ -144,13 +144,13 @@ func reconfigSensor(c9 *warp9.Clnt) {
 
 	if reportCount > 2 {
 		reportCount = 0
-		fid, err := c9.FWalk("ctl")
+		fid, err := c9.Walk("ctl")
 		if err != warp9.Egood {
 			mlog.Error("could not Walk:%v", err)
 			return
 		}
 		defer c9.Clunk(fid)
-		err = c9.Open(fid, warp9.OWRITE)
+		err = c9.FOpen(fid, warp9.OWRITE)
 		if err != warp9.Egood {
 			mlog.Error("open failed:%v", err)
 			return

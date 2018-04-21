@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lavaorg/dowarp/sensim"
 	"github.com/lavaorg/lrt/mlog"
-	"github.com/lavaorg/warp/servers/sensim"
 )
 
 var addr = flag.String("a", "127.0.0.1:9901", "network address")

@@ -1,15 +1,15 @@
-// Copyright 2009 The ninep Authors.  All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright 2018 Larry Rau. All rights reserved
+// See Apache2 LICENSE
 
-package main
+package nullfs
 
+/*
 import (
 	"flag"
 	"fmt"
 	"log"
 
-	"github.com/lavaorg/warp/servers/nullfs"
+	"github.com/lavaorg/dowarp/nullfs"
 	"github.com/lavaorg/warp/warp9"
 )
 
@@ -41,3 +41,4 @@ func showInterfaces(ifaces interface{}) {
 	}
 
 }
+*/

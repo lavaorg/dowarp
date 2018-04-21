@@ -15,10 +15,11 @@
 // of the command can be immediately read. If multiple commands are writen
 // the result of each command can be read with line breaks in between.
 //
-package sensim
+package efgw
 
 import (
 	"log"
+	"time"
 
 	"github.com/lavaorg/lrt/mlog"
 	"github.com/lavaorg/warp/warp9"
@@ -62,9 +63,12 @@ func newSenDir(n string, dir bool) *SenDir {
 	var d SenDir
 
 	d.Name = n
-	d.Uid = "nobody"
-	d.Gid = "nobody"
-	d.Muid = "nobody"
+	d.Uid = 501
+	d.Gid = 20
+	d.Muid = 501
+
+	d.Atime = uint32(time.Now().Unix())
+	d.Mtime = d.Atime
 
 	if n == "/" {
 		d.Mode = warp9.DMDIR | uint32(perms(warp9.DMREAD, warp9.DMREAD, warp9.DMREAD))
@@ -72,8 +76,6 @@ func newSenDir(n string, dir bool) *SenDir {
 		d.Mode = uint32(perms(warp9.DMREAD, warp9.DMREAD, warp9.DMREAD))
 	}
 
-	d.Atime = 0
-	d.Mtime = 0
 	typ := uint8(warp9.QTFILE)
 	if dir {
 		typ = warp9.QTDIR
@@ -81,8 +83,6 @@ func newSenDir(n string, dir bool) *SenDir {
 	d.Qid = warp9.Qid{typ, 0, qidp}
 	qidp++
 
-	d.Type = 0
-	d.Dev = 0
 	mlog.Debug("new SenDir:%v", d)
 	return &d
 }
@@ -159,10 +159,8 @@ func (*SenSrv) Walk(req *warp9.SrvReq) {
 	}
 	senfid := req.Newfid.Aux.(*senFid)
 	senfid.entry = o
-	wqids := make([]warp9.Qid, 1)
-	wqids[0] = senfid.entry.Qid
 
-	req.RespondRwalk(wqids[0:])
+	req.RespondRwalk(&senfid.entry.Qid)
 }
 
 func (*SenSrv) Open(req *warp9.SrvReq) {
