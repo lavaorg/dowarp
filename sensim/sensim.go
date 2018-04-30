@@ -76,7 +76,7 @@ func newSenDir(n string, dir bool) *SenDir {
 	d.Atime = uint32(time.Now().Unix())
 	d.Mtime = d.Atime
 
-	typ := uint8(warp9.QTFILE)
+	typ := uint8(warp9.QTOBJ)
 	if dir {
 		typ = warp9.QTDIR
 	}

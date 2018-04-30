@@ -55,8 +55,8 @@ func init() {
 	objects = make(map[string]*SenDir)
 	objects[root.Name] = root
 
-	objects["ctl"], _ = newSensorItem(newSenDir("ctl", false))
-	objects["sensors"], _ = newSensorItem(newSenDir("sensors", false))
+	//objects["ctl"], _ = newSensorItem(newSenDir("ctl", false))
+	//objects["sensors"], _ = newSensorItem(newSenDir("sensors", false))
 }
 
 func newSenDir(n string, dir bool) *SenDir {
@@ -76,7 +76,7 @@ func newSenDir(n string, dir bool) *SenDir {
 		d.Mode = uint32(perms(warp9.DMREAD, warp9.DMREAD, warp9.DMREAD))
 	}
 
-	typ := uint8(warp9.QTFILE)
+	typ := uint8(warp9.QTOBJ)
 	if dir {
 		typ = warp9.QTDIR
 	}

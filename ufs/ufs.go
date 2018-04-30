@@ -230,16 +230,14 @@ func (*Ufs) Walk(req *warp9.SrvReq) {
 	//wqids := make([]warp9.Qid, len(tc.Wname))
 	path := fid.path
 	i := 0
-	p := ""
+	p := path
 	for ; i < len(tc.Wname); i++ {
-		p = path + "/" + tc.Wname[i]
+		p = p + "/" + tc.Wname[i]
 	}
 	st, e := os.Lstat(p)
 	if e != nil {
-		if i == 0 {
-			req.RespondError(warp9.Enotexist)
-			return
-		}
+		req.RespondError(warp9.Enotexist)
+		return
 	}
 
 	wqid := *dir2Qid(st)
