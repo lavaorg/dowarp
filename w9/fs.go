@@ -4,10 +4,17 @@
 package w9
 
 import (
+	"time"
+
 	"github.com/lavaorg/lrt/mlog"
 	"github.com/lavaorg/warp/warp9"
 )
 
+// Called when a client attaches to this server.
+// the root is always "/"
+//
+// log the attach
+//
 func (srv *Serv) Attach(req *warp9.SrvReq) {
 	if req.Afid != nil {
 		req.RespondError(warp9.Enoauth)
@@ -22,8 +29,12 @@ func (srv *Serv) Attach(req *warp9.SrvReq) {
 	req.RespondRattach(&srv.root.Qid)
 }
 
+// Flush has not function
 func (*Serv) Flush(req *warp9.SrvReq) {}
 
+// Ensure fid is a directory and invoke the
+// walk method on that diretory.
+// Promote the fid if succsfully moved
 func (*Serv) Walk(req *warp9.SrvReq) {
 	d, ok := req.Fid.Aux.(Directory)
 	if !ok {
@@ -46,14 +57,11 @@ func (*Serv) Walk(req *warp9.SrvReq) {
 	req.RespondRwalk(&item.GetDir().Qid)
 }
 
+// Invoke the objects SetOpened(true) method.
 func (*Serv) Open(req *warp9.SrvReq) {
 	i := req.Fid.Aux.(Item)
-	tc := req.Tc
-	mode := tc.Mode
-	if mode != warp9.OREAD {
-		req.RespondError(warp9.Eperm)
-		return
-	}
+	//tc := req.Tc
+	//mode := tc.Mode
 
 	// check permissions
 
@@ -62,12 +70,15 @@ func (*Serv) Open(req *warp9.SrvReq) {
 	req.RespondRopen(&i.GetDir().Qid, 0)
 }
 
+// invoke the object's SetOpened(false) method.
 func (*Serv) Clunk(req *warp9.SrvReq) {
 	i := req.Fid.Aux.(Item)
 	i.SetOpened(false)
 	req.RespondRclunk()
 }
 
+// Ensure target is a directory and invoke its CreateItem method.
+// Promote the fid to new object if successful.
 func (*Serv) Create(req *warp9.SrvReq) {
 	d, ok := req.Fid.Aux.(Directory)
 	if !ok {
@@ -80,7 +91,7 @@ func (*Serv) Create(req *warp9.SrvReq) {
 
 	tc := req.Tc
 
-	item, err := d.Create(tc.Name, tc.Perm, tc.Mode)
+	item, err := d.CreateItem(nil, tc.Name, tc.Perm, tc.Mode)
 	if err != nil {
 		req.RespondError(fsRespondError(err, warp9.Eio))
 		return
@@ -90,6 +101,7 @@ func (*Serv) Create(req *warp9.SrvReq) {
 	req.RespondRcreate(&item.GetDir().Qid, 0)
 }
 
+// Invoke the object's Read() method.
 func (*Serv) Read(req *warp9.SrvReq) {
 	item := req.Fid.Aux.(Item)
 	tc := req.Tc
@@ -102,20 +114,42 @@ func (*Serv) Read(req *warp9.SrvReq) {
 		req.RespondError(fsRespondError(err, warp9.Eio))
 		return
 	}
+
+	// change the a-time
+	d := item.GetDir()
+	d.Atime = uint32(time.Now().Unix())
+
 	rc.SetRreadCount(count)
 	req.Respond()
 }
 
+// Invoke the object's Write() method.
 func (*Serv) Write(req *warp9.SrvReq) {
-	req.RespondError(warp9.Enotimpl)
+	item := req.Fid.Aux.(Item)
+	tc := req.Tc
+
+	count, err := item.Write(tc.Data, tc.Offset, tc.Count)
+	if err != nil {
+		req.RespondError(fsRespondError(err, warp9.Eio))
+		return
+	}
+
+	// change the m-time and a-time
+	d := item.GetDir()
+	d.Atime = uint32(time.Now().Unix())
+	d.Mtime = d.Atime
+
+	req.RespondRwrite(count)
 	return
 }
 
+// Not supported
 func (*Serv) Remove(req *warp9.SrvReq) {
 	req.RespondError(warp9.Enotimpl)
 	return
 }
 
+// Report the object's current status, reply with meta-data.
 func (*Serv) Stat(req *warp9.SrvReq) {
 	wo := req.Fid.Aux.(Item)
 	if wo == nil {
@@ -125,6 +159,7 @@ func (*Serv) Stat(req *warp9.SrvReq) {
 	return
 }
 
+// not supported
 func (u *Serv) Wstat(req *warp9.SrvReq) {
 	req.RespondError(warp9.Enotimpl)
 	return
@@ -132,6 +167,7 @@ func (u *Serv) Wstat(req *warp9.SrvReq) {
 
 // helper functions
 
+// error helper
 func fsRespondError(err error, alterr warp9.W9Err) warp9.W9Err {
 	err9, ok := err.(warp9.W9Err)
 	if !ok {
