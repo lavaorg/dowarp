@@ -156,8 +156,8 @@ func reconfigSensor(c9 *warp9.Clnt) {
 			return
 		}
 		data := []byte("ip:" + *alt)
-		cnt, err := c9.Write(fid, data, 0)
-		if err != warp9.Egood {
+		cnt, e := c9.Write(fid, data, 0)
+		if e != nil {
 			mlog.Error("Error:%v\n", err)
 		} else {
 			mlog.Info("ctl: ip:%v [%d]", alt, cnt)

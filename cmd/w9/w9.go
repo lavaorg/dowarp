@@ -17,8 +17,8 @@ import (
 
 	"github.com/lavaorg/lrt/mlog"
 
-	"github.com/lavaorg/dowarp/w9"
 	"github.com/lavaorg/warp/warp9"
+	"github.com/lavaorg/warp/wkit"
 )
 
 var addr = flag.String("a", ":5640", "network address")
@@ -31,7 +31,7 @@ func main() {
 	flag.Parse()
 
 	// create our object server
-	oserv := w9.StartServer("w9", 1)
+	oserv := wkit.StartServer("w9", *debug)
 	root := oserv.GetRoot()
 
 	// create ctl object using the Command Object which accepts
@@ -42,10 +42,10 @@ func main() {
 	// create two objects to be served that just can store bytes
 	// in ram; bytes can be read or written
 	i, _ = root.CreateItem(nil, "wow", warp9.DMAPPEND|PermUGO, 0)
-	o := i.(*w9.OneItem)
+	o := i.(*wkit.OneItem)
 	o.Buffer = []byte("Wow!")
 	i, _ = root.CreateItem(nil, "big", warp9.DMTMP|PermUGO, 0)
-	o = i.(*w9.OneItem)
+	o = i.(*wkit.OneItem)
 	o.Buffer = []byte("Hello World!")
 
 	// start serving
@@ -62,8 +62,8 @@ func main() {
 // Normal procedure is to perform a Write/Read pari and thus open
 // the object in O_RDWR mode.
 //
-func MakeCtl() w9.Item {
-	cmd := w9.NewCommand("ctl", nil, &MyCtl{"larry\n"})
+func MakeCtl() wkit.Item {
+	cmd := wkit.NewCommand("ctl", nil, &MyCtl{"larry\n"})
 	cmd.AddMethod("hello", hello)
 	cmd.AddMethod("add", add)
 	cmd.AddMethod("cpus", cpus)
@@ -80,7 +80,7 @@ type MyCtl struct {
 //
 
 // say hello; get a response
-func hello(ctx w9.CmdCtx, cmd *w9.Command, cmdname string, args []byte) error {
+func hello(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error {
 	myctl, ok := ctx.(*MyCtl)
 	if !ok {
 		return errors.New("cmdobj:bad ctx")
@@ -97,7 +97,7 @@ func hello(ctx w9.CmdCtx, cmd *w9.Command, cmdname string, args []byte) error {
 }
 
 // add a seqence of numbers represented in text form space separated
-func add(ctx w9.CmdCtx, cmd *w9.Command, cmdname string, args []byte) error {
+func add(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error {
 	s := string(args)
 	aa := strings.Split(s, " ")
 
@@ -114,13 +114,13 @@ func add(ctx w9.CmdCtx, cmd *w9.Command, cmdname string, args []byte) error {
 }
 
 // discover the object server's number of virtual CPUs
-func cpus(ctx w9.CmdCtx, cmd *w9.Command, cmdname string, args []byte) error {
+func cpus(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error {
 	cmd.Buffer = []byte(strconv.Itoa(runtime.NumCPU()) + "\n")
 	return nil
 }
 
 // obtain the object servers memory stats
-func memstats(ctx w9.CmdCtx, cmd *w9.Command, cmdname string, args []byte) error {
+func memstats(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error {
 	var ms runtime.MemStats
 	var b bytes.Buffer
 
