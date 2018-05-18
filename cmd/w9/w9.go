@@ -19,13 +19,16 @@ import (
 
 	"github.com/lavaorg/warp/warp9"
 	"github.com/lavaorg/warp/wkit"
+
+	"github.com/lavaorg/dowarp/fakesen"
 )
 
-var addr = flag.String("a", ":5640", "network address")
-var debug = flag.Int("debug", 0, "print debug messages")
+var addr = flag.String("a", ":9090", "network address")
+var debug = flag.Int("d", 0, "print debug messages")
 var oserver = flag.String("s", "echoos", "object server")
 
-const PermUGO = 0x1A0
+const PermUGO = 0x1A0 //rw- r-- ---
+const PermRO = 0x120  //r-- r-- ---
 
 func main() {
 	flag.Parse()
@@ -37,16 +40,23 @@ func main() {
 	// create ctl object using the Command Object which accepts
 	// single verb commands with variable arguments and returns
 	// a single sequence of bytes as a result
-	i, _ := root.CreateItem(MakeCtl(), "ctl", warp9.DMAPPEND|PermUGO, 0)
+	i, _ := root.CreateItem(MakeCtl(), "ctl", warp9.DMAPPEND|PermUGO)
 
 	// create two objects to be served that just can store bytes
 	// in ram; bytes can be read or written
-	i, _ = root.CreateItem(nil, "wow", warp9.DMAPPEND|PermUGO, 0)
+	i, _ = root.CreateItem(nil, "wow", warp9.DMAPPEND|PermUGO)
 	o := i.(*wkit.OneItem)
 	o.Buffer = []byte("Wow!")
-	i, _ = root.CreateItem(nil, "big", warp9.DMTMP|PermUGO, 0)
+	i, _ = root.CreateItem(nil, "big", warp9.DMTMP|PermUGO)
 	o = i.(*wkit.OneItem)
 	o.Buffer = []byte("Hello World!")
+
+	// create a directory and sensors in it
+	i, _ = root.CreateItem(nil, "sensors", warp9.DMDIR|PermUGO)
+	d := i.(*wkit.DirItem)
+	d.CreateItem(fakesen.NewFakeSensor(), "temp1", warp9.DMAPPEND|PermRO)
+	d.CreateItem(fakesen.NewFakeSensor(), "temp2", warp9.DMAPPEND|PermRO)
+	d.CreateItem(fakesen.NewFakeSensor(), "temp3", warp9.DMAPPEND|PermRO)
 
 	// start serving
 	err := oserv.StartNetListener("tcp", *addr)
