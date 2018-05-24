@@ -119,7 +119,7 @@ func (*SenSrv) FidDestroy(sfid *warp9.SrvFid) {
 
 func (ufs *SenSrv) Attach(req *warp9.SrvReq) {
 	if req.Afid != nil {
-		req.RespondError(warp9.Enoauth)
+		req.RespondError(warp9.Error(warp9.Enoauth))
 		return
 	}
 	//tc := req.Tc
@@ -136,7 +136,7 @@ func (*SenSrv) Walk(req *warp9.SrvReq) {
 	fid := req.Fid.Aux.(*senFid)
 	tc := req.Tc
 	if fid == nil {
-		req.RespondError(warp9.Ebaduse)
+		req.RespondError(warp9.Error(warp9.Ebaduse))
 		return
 	}
 
@@ -153,7 +153,7 @@ func (*SenSrv) Walk(req *warp9.SrvReq) {
 	}
 	o := objects[p]
 	if o == nil {
-		req.RespondError(warp9.Enotexist)
+		req.RespondError(warp9.Error(warp9.Enotexist))
 		log.Printf("obj not found: %v\n", p)
 		return
 	}
@@ -168,7 +168,7 @@ func (*SenSrv) Open(req *warp9.SrvReq) {
 	tc := req.Tc
 	mode := tc.Mode
 	if mode != warp9.OREAD {
-		req.RespondError(warp9.Eperm)
+		req.RespondError(warp9.Error(warp9.Eperm))
 		return
 	}
 	sfid := req.Fid.Aux.(*senFid)
@@ -177,7 +177,7 @@ func (*SenSrv) Open(req *warp9.SrvReq) {
 
 func (*SenSrv) Create(req *warp9.SrvReq) {
 	// no creation
-	req.RespondError(warp9.Enotimpl)
+	req.RespondError(warp9.Error(warp9.Enotimpl))
 }
 
 func (*SenSrv) Read(req *warp9.SrvReq) {
@@ -192,13 +192,13 @@ func (*SenSrv) Read(req *warp9.SrvReq) {
 	// convert our directory to byte buffer; we aren't caching
 	//b := warp9.PackDir(&root.Dir, req.Conn.Dotu)
 	var b []byte
-	var err warp9.W9Err
+	var err *warp9.WarpError
 	if fid.Type&warp9.QTDIR > 0 {
 		b, err = readdir(req)
 	} else {
 		b, err = readobj(req)
 	}
-	if err != warp9.Egood {
+	if err != nil {
 		req.RespondError(err)
 		return
 	}
@@ -219,38 +219,38 @@ func (*SenSrv) Read(req *warp9.SrvReq) {
 	req.Respond()
 }
 
-func readdir(req *warp9.SrvReq) ([]byte, warp9.W9Err) {
+func readdir(req *warp9.SrvReq) ([]byte, *warp9.WarpError) {
 	buf := make([]byte, 100)
 	for _, o := range objects {
 		b := warp9.PackDir(&o.Dir)
 		buf = append(buf, b...)
 	}
-	return buf, warp9.Egood
+	return buf, nil
 }
 
-func readobj(req *warp9.SrvReq) ([]byte, warp9.W9Err) {
+func readobj(req *warp9.SrvReq) ([]byte, *warp9.WarpError) {
 	sfid := req.Fid.Aux.(*senFid)
 	sdir := sfid.entry
 
 	if sdir.item != nil {
 		b, e := sdir.item.Read()
 		if e != nil {
-			return nil, warp9.Eio
+			return nil, warp9.Error(warp9.Eio)
 		}
-		return b, warp9.Egood
+		return b, nil
 	}
-	return nil, warp9.Eio
+	return nil, warp9.Error(warp9.Eio)
 }
 
 func (*SenSrv) Write(req *warp9.SrvReq) {
-	req.RespondError(warp9.Enotimpl)
+	req.RespondError(warp9.Error(warp9.Enotimpl))
 	return
 }
 
 func (*SenSrv) Clunk(req *warp9.SrvReq) { req.RespondRclunk() }
 
 func (*SenSrv) Remove(req *warp9.SrvReq) {
-	req.RespondError(warp9.Enotimpl)
+	req.RespondError(warp9.Error(warp9.Enotimpl))
 	return
 }
 
@@ -265,6 +265,6 @@ func (*SenSrv) Stat(req *warp9.SrvReq) {
 	return
 }
 func (u *SenSrv) Wstat(req *warp9.SrvReq) {
-	req.RespondError(warp9.Enotimpl)
+	req.RespondError(warp9.Error(warp9.Enotimpl))
 	return
 }

@@ -42,7 +42,7 @@ func (o *FakeSensor) Read(obuf []byte, off uint64, rcount uint32) (uint32, error
 		return 0, nil
 	}
 	if int(rcount) < len(b) {
-		return 0, warp9.Eio
+		return 0, warp9.Error(warp9.Eio)
 	}
 	n := copy(obuf, b)
 	return uint32(n), nil
