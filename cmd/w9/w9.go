@@ -27,8 +27,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lavaorg/lrt/mlog"
-
 	"github.com/lavaorg/warp/wkit"
 
 	"github.com/lavaorg/dowarp/fakesen"
@@ -121,9 +119,7 @@ func hello(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) erro
 		return errors.New("bad command item")
 	}
 
-	cmd.Buf = myctl.msg
-	mlog.Debug("cmd.Buffer: %v, %v", len(cmd.Buf), cmd.Buf)
-	mlog.Debug("cmd: %T %p", cmd, cmd)
+	cmd.SetBuffer([]byte(myctl.msg))
 	return nil
 }
 
@@ -140,13 +136,13 @@ func add(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error 
 		}
 		r = r + n
 	}
-	cmd.Buf = strconv.Itoa(r) + "\n"
+	cmd.SetBuffer([]byte(strconv.Itoa(r) + "\n"))
 	return nil
 }
 
 // discover the object server's number of virtual CPUs
 func cpus(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error {
-	cmd.Buf = strconv.Itoa(runtime.NumCPU()) + "\n"
+	cmd.SetBuffer([]byte(strconv.Itoa(runtime.NumCPU()) + "\n"))
 	return nil
 }
 
@@ -184,6 +180,6 @@ func memstats(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) e
 		fmt.Fprintf(&b, "%d:%d\t:%v\n", s.Size, s.Mallocs, pat[:p])
 	}
 
-	cmd.Buf = b.String()
+	cmd.SetBuffer(b.Bytes())
 	return nil
 }
