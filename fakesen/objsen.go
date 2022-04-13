@@ -15,14 +15,17 @@ import (
 )
 
 type FakeSensor struct {
-	wkit.OneItem
+	*wkit.OneItem
 	lasttemp float32
 }
 
-func NewFakeSensor() *FakeSensor {
-	var s FakeSensor
-	s.lasttemp = 32.8
-	return &s
+func NewFakeSensor(name string) *FakeSensor {
+	s := &FakeSensor{
+		OneItem:  wkit.NewItem(name),
+		lasttemp: 32.8,
+	}
+	s.OneItem.SetMode(0x120)
+	return s
 }
 
 func (o *FakeSensor) Walked() (wkit.Item, error) {
@@ -42,7 +45,7 @@ func (o *FakeSensor) Read(obuf []byte, off uint64, rcount uint32) (uint32, error
 		return 0, nil
 	}
 	if int(rcount) < len(b) {
-		return 0, warp9.Error(warp9.Eio)
+		return 0, warp9.ErrorCode(warp9.Eio)
 	}
 	n := copy(obuf, b)
 	return uint32(n), nil

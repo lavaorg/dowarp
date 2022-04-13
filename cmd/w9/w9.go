@@ -3,12 +3,24 @@
 
 package main
 
-// simple wrapper for running object servers listening on local network port
+import "flag"
+
+/*
+create a very basic warp9 server that listens on local network
+
+Server will export a directory structure:
+  /ctl      -- command object: write command; read results
+  /wow      -- read/write string
+  /big      -- read/write string
+  /sensors
+	/temp1  -- dynamic value
+  	/temp2
+ 	/tmp3
+*/
 
 import (
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"runtime"
@@ -17,7 +29,6 @@ import (
 
 	"github.com/lavaorg/lrt/mlog"
 
-	"github.com/lavaorg/warp/warp9"
 	"github.com/lavaorg/warp/wkit"
 
 	"github.com/lavaorg/dowarp/fakesen"
@@ -33,36 +44,46 @@ const PermRO = 0x120  //r-- r-- ---
 func main() {
 	flag.Parse()
 
-	// create our object server
-	oserv := wkit.StartServer("w9", *debug)
-	root := oserv.GetRoot()
+	// create objects
+	ctl := makeCtl()
 
-	// create ctl object using the Command Object which accepts
-	// single verb commands with variable arguments and returns
-	// a single sequence of bytes as a result
-	i, _ := root.CreateItem(MakeCtl(), "ctl", warp9.DMAPPEND|PermUGO)
+	// create a read-only string item
+	wow := wkit.NewItem("wow")
+	wow.SetBuffer([]byte("Wow!"))
+	wow.SetMode(PermRO)
 
-	// create two objects to be served that just can store bytes
-	// in ram; bytes can be read or written
-	i, _ = root.CreateItem(nil, "wow", warp9.DMAPPEND|PermUGO)
-	o := i.(*wkit.OneItem)
-	o.Buffer = []byte("Wow!")
-	i, _ = root.CreateItem(nil, "big", warp9.DMTMP|PermUGO)
-	o = i.(*wkit.OneItem)
-	o.Buffer = []byte("Hello World!")
+	// create another read-only string object
+	hello := wkit.NewItem("hello")
+	hello.SetBuffer([]byte("Hello World!"))
+	hello.SetMode(PermRO)
 
-	// create a directory and sensors in it
-	i, _ = root.CreateItem(nil, "sensors", warp9.DMDIR|PermUGO)
-	d := i.(*wkit.DirItem)
-	d.CreateItem(fakesen.NewFakeSensor(), "temp1", warp9.DMAPPEND|PermRO)
-	d.CreateItem(fakesen.NewFakeSensor(), "temp2", warp9.DMAPPEND|PermRO)
-	d.CreateItem(fakesen.NewFakeSensor(), "temp3", warp9.DMAPPEND|PermRO)
+	// create a sub-directory with fake temp sensors
+	sensors := makeSensors()
+
+	// arrange objects
+	root := wkit.NewDirItem("/")
+	root.AddItem(ctl)
+	root.AddItem(wow)
+	root.AddItem(hello)
+	root.AddDirectory(sensors)
+
+	// create server
+	srv := wkit.NewServer("w9", *debug, root)
+	srv.Start(srv)
 
 	// start serving
-	err := oserv.StartNetListener("tcp", *addr)
+	err := srv.StartNetListener("tcp", *addr)
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func makeSensors() wkit.Directory {
+	sdir := wkit.NewDirItem("sensors")
+	sdir.AddItem(fakesen.NewFakeSensor("temp1"))
+	sdir.AddItem(fakesen.NewFakeSensor("temp2"))
+	sdir.AddItem(fakesen.NewFakeSensor("temp3"))
+	return sdir
 }
 
 // create the single "Command" object called "ctl" and
@@ -72,7 +93,7 @@ func main() {
 // Normal procedure is to perform a Write/Read pari and thus open
 // the object in O_RDWR mode.
 //
-func MakeCtl() wkit.Item {
+func makeCtl() wkit.Item {
 	cmd := wkit.NewCommand("ctl", nil, &MyCtl{"larry\n"})
 	cmd.AddMethod("hello", hello)
 	cmd.AddMethod("add", add)
@@ -100,8 +121,8 @@ func hello(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) erro
 		return errors.New("bad command item")
 	}
 
-	cmd.Buffer = []byte(myctl.msg)
-	mlog.Debug("cmd.Buffer: %v, %v", len(cmd.Buffer), cmd.Buffer)
+	cmd.Buf = myctl.msg
+	mlog.Debug("cmd.Buffer: %v, %v", len(cmd.Buf), cmd.Buf)
 	mlog.Debug("cmd: %T %p", cmd, cmd)
 	return nil
 }
@@ -119,13 +140,13 @@ func add(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error 
 		}
 		r = r + n
 	}
-	cmd.Buffer = []byte(strconv.Itoa(r) + "\n")
+	cmd.Buf = strconv.Itoa(r) + "\n"
 	return nil
 }
 
 // discover the object server's number of virtual CPUs
 func cpus(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) error {
-	cmd.Buffer = []byte(strconv.Itoa(runtime.NumCPU()) + "\n")
+	cmd.Buf = strconv.Itoa(runtime.NumCPU()) + "\n"
 	return nil
 }
 
@@ -163,6 +184,6 @@ func memstats(ctx wkit.CmdCtx, cmd *wkit.Command, cmdname string, args []byte) e
 		fmt.Fprintf(&b, "%d:%d\t:%v\n", s.Size, s.Mallocs, pat[:p])
 	}
 
-	cmd.Buffer = b.Bytes()
+	cmd.Buf = b.String()
 	return nil
 }

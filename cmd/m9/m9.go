@@ -36,7 +36,7 @@ func main() {
 
 	// create a mount point and add it
 	usr := warp9.Identity.User(1)
-	mt, err := wkit.MountPointDial("tcp", "localhost:5640", "/", 0, usr)
+	mt, err := wkit.MountPointDial("tcp", "0.0.0.0:5640", "/", 0, usr)
 	if err != nil {
 		mlog.Error("could not mount:%v", err)
 		return
